@@ -500,6 +500,7 @@ canvas { width: 100% !important; }
     <div class="card">
       <div class="card-title">Log an expense</div>
 
+
       <div class="form-group">
         <label class="form-label">Month & Year</label>
         <input type="month" class="form-input" id="expMonth">
@@ -533,6 +534,16 @@ canvas { width: 100% !important; }
       </div>
 
       <button class="submit-btn" onclick="addExpense()">Add Expense</button>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="card-title">Backup & Restore</div>
+      <p style="font-size:13px; color:var(--text2); margin-bottom:14px; line-height:1.6;">Export your data as a backup file, and restore it anytime if data is lost.</p>
+      <div style="display:flex; gap:10px;">
+        <button class="submit-btn" style="background:var(--accent);" onclick="exportData()">⬇ Export Backup</button>
+        <button class="submit-btn" style="background:var(--bg2); color:var(--text);" onclick="document.getElementById('importFile').click()">⬆ Restore Backup</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
     </div>
   </div>
 
@@ -599,7 +610,7 @@ const CATEGORIES = [
   { name: 'Fun Money', budget: 200 },
   { name: 'Insurance', budget: 64 },
   { name: 'Student Loans', budget: 247 },
-  { name: 'Unexpected', budget: 0 }
+  { name: 'Unexpected', budget: 300, alwaysRed: true }
 ];
 
 const TOTAL_BUDGET = 4200;
@@ -762,18 +773,19 @@ function renderSpending() {
     const spent = totals[cat.name] || 0;
     const budget = cat.budget;
     let pct = budget > 0 ? (spent / budget) * 100 : (spent > 0 ? 100 : 0);
-    const over = spent > budget && !(budget === 0 && spent === 0);
+    const over = spent > budget;
     const displayPct = Math.min(pct, 100);
+    const barRed = cat.alwaysRed || over;
 
     const row = document.createElement('div');
     row.className = 'cat-row';
     row.innerHTML = `
       <div class="cat-header">
         <div class="cat-name">${cat.name}</div>
-        <div class="cat-amounts"><span>${formatCurrency(spent)}</span> / ${budget > 0 ? formatCurrency(budget) : 'no budget'}</div>
+        <div class="cat-amounts"><span>${formatCurrency(spent)}</span> / ${formatCurrency(budget)}</div>
       </div>
       <div class="progress-bg">
-        <div class="progress-fill ${over || (budget === 0 && spent > 0) ? 'over' : 'under'}" style="width:${spent === 0 ? 0 : Math.max(displayPct, 3)}%"></div>
+        <div class="progress-fill ${barRed ? 'over' : 'under'}" style="width:${spent === 0 ? 0 : Math.max(displayPct, 3)}%"></div>
       </div>`;
     catList.appendChild(row);
   });
@@ -1049,6 +1061,54 @@ function autoPopulateAnnual() {
   } else {
     localStorage.setItem(annualKey, '1');
   }
+}
+
+// Export backup
+function exportData() {
+  const data = loadData();
+  const meta = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k.startsWith('mb_')) meta[k] = localStorage.getItem(k);
+  }
+  const backup = { expenses: data, meta, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `monthly-budget-backup-${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✓ Backup exported');
+}
+
+// Import backup
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.expenses || !Array.isArray(backup.expenses)) {
+        showToast('Invalid backup file');
+        return;
+      }
+      if (!confirm(`Restore ${backup.expenses.length} expenses from ${backup.exportedAt ? backup.exportedAt.slice(0,10) : 'backup'}? This will replace all current data.`)) return;
+      saveData(backup.expenses);
+      if (backup.meta) {
+        Object.keys(backup.meta).forEach(k => localStorage.setItem(k, backup.meta[k]));
+      }
+      showToast(`✓ Restored ${backup.expenses.length} expenses`);
+      renderSpending();
+      renderTotals();
+    } catch {
+      showToast('Could not read backup file');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
 }
 
 // Init

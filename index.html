@@ -13,21 +13,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #F0EBF8;
-  --bg2: #E4DCF2;
-  --bg3: #D8CAF0;
-  --card: #FDFCFF;
-  --accent: #7B5EA7;
-  --accent2: #4A2B8C;
-  --accent-light: #C9B8E8;
-  --text: #2D1F5E;
-  --text2: #6B5B8A;
-  --text3: #9C8DB8;
+  --bg: #F5F0EB;
+  --bg2: #EDE5E0;
+  --bg3: #E2D6D0;
+  --card: #FAF7F4;
+  --accent: #CEB0CD;
+  --accent2: #431C4E;
+  --accent-light: #E8D5E7;
+  --text: #2A1230;
+  --text2: #6B4F72;
+  --text3: #A48AAB;
   --success: #2E7D4F;
   --success-bg: #E8F5EE;
   --danger: #C0392B;
   --danger-bg: #FDEAEA;
-  --border: rgba(123,94,167,0.15);
+  --border: rgba(67,28,78,0.12);
   --radius: 16px;
   --radius-sm: 10px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -61,8 +61,8 @@ body {
 
 .app-title {
   font-family: 'Lora', serif;
-  font-size: 22px;
-  color: #F0EBF8;
+  font-size: 30px;
+  color: #F5F0EB;
   letter-spacing: -0.3px;
 }
 
@@ -124,7 +124,7 @@ body {
   background: transparent;
   color: var(--accent-light);
   font-family: 'Poppins', sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   cursor: pointer;
   border-radius: 8px;
@@ -537,7 +537,23 @@ canvas { width: 100% !important; }
     </div>
 
     <div class="card" style="margin-top:12px;">
-      <div class="card-title">Backup & Restore</div>
+      <div class="card-title">⏰ Daily Fun Money Reminder</div>
+      <p style="font-size:13px; color:var(--text2); line-height:1.7; margin-bottom:14px;">Set up a daily 10:30 AM notification that opens this app. Takes 2 minutes — do it once and you're set!</p>
+      <div style="background:var(--bg2); border-radius:var(--radius-sm); padding:14px; font-size:13px; color:var(--text); line-height:1.8;">
+        <div style="font-weight:600; margin-bottom:6px; color:var(--accent2);">Setup steps:</div>
+        <div>1. Open the <strong>Shortcuts</strong> app on your iPhone</div>
+        <div>2. Tap <strong>Automation</strong> (bottom tab)</div>
+        <div>3. Tap <strong>＋ New Automation</strong></div>
+        <div>4. Choose <strong>Time of Day</strong></div>
+        <div>5. Set time to <strong>10:30 AM</strong>, repeat <strong>Daily</strong></div>
+        <div>6. Tap <strong>Next</strong></div>
+        <div>7. Tap <strong>Add Action</strong> → search <strong>"Open URL"</strong></div>
+        <div>8. Paste your app URL (e.g. <em>https://jrharper98.github.io/monthly-budget/</em>)</div>
+        <div>9. Tap <strong>Next</strong> → turn off "Ask Before Running"</div>
+        <div>10. Tap <strong>Done</strong> ✓</div>
+      </div>
+      <p style="font-size:12px; color:var(--text3); margin-top:10px;">Every day at 10:30 AM you'll get a notification — tap it to open the app and check your Fun Money balance.</p>
+    </div>
       <p style="font-size:13px; color:var(--text2); margin-bottom:14px; line-height:1.6;">Export your data as a backup file, and restore it anytime if data is lost.</p>
       <div style="display:flex; gap:10px;">
         <button class="submit-btn" style="background:var(--accent);" onclick="exportData()">⬇ Export Backup</button>
@@ -602,7 +618,7 @@ const CATEGORIES = [
   { name: 'Phone', budget: 109 },
   { name: 'PG&E', budget: 35 },
   { name: 'Xfinity', budget: 100 },
-  { name: 'All Subscriptions', budget: 207 },
+  { name: 'All Subscriptions', budget: 249 },
   { name: 'Credit Cards', budget: 614 },
   { name: 'Groceries', budget: 280 },
   { name: 'Transit', budget: 161 },
@@ -763,8 +779,8 @@ function renderSpending() {
   document.getElementById('spentTotal').textContent = formatCurrency(spent);
   const remaining = TOTAL_BUDGET - spent;
   const remEl = document.getElementById('remainingDisplay');
-  remEl.textContent = remaining >= 0 ? `${formatCurrency(remaining)} left` : `${formatCurrency(remaining)} over`;
-  remEl.style.color = remaining >= 0 ? '#C9B8E8' : '#FFB3AE';
+  remEl.textContent = remaining >= 0 ? `${formatCurrency(remaining)} left` : `${formatCurrency(Math.abs(remaining))} over`;
+  remEl.style.color = remaining >= 0 ? '#5DBE8A' : '#FF7B6B';
 
   // Category list
   const catList = document.getElementById('categoryList');

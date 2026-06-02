@@ -552,6 +552,9 @@ canvas { width: 100% !important; }
       </div>
       <p style="font-size:12px; color:var(--text3); margin-top:10px;">Every day at 10:00 AM a notification will appear on your lock screen. Tap it to open Reminders, then switch to your budget app!</p>
     </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="card-title">Backup & Restore</div>
       <p style="font-size:13px; color:var(--text2); margin-bottom:14px; line-height:1.6;">Export your data as a backup file, and restore it anytime if data is lost.</p>
       <div style="display:flex; gap:10px;">
         <button class="submit-btn" style="background:var(--accent);" onclick="exportData()">⬇ Export Backup</button>
@@ -580,6 +583,10 @@ canvas { width: 100% !important; }
 <div class="modal-overlay" id="editModal">
   <div class="modal">
     <div class="modal-title">Edit expense</div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-input" id="editDate">
+    </div>
     <div class="form-group">
       <label class="form-label">Category</label>
       <select class="form-select" id="editCategory"></select>
@@ -932,6 +939,9 @@ function openEdit(id) {
   document.getElementById('editAmount').value = expense.amount;
   document.getElementById('editRepeat').value = expense.repeat || 'none';
   document.getElementById('editNote').value = expense.note || '';
+  // Populate date field — convert ISO to YYYY-MM-DD for date input
+  const d = expense.date ? new Date(expense.date) : new Date();
+  document.getElementById('editDate').value = d.toISOString().slice(0, 10);
   document.getElementById('editModal').classList.add('open');
 }
 
@@ -945,6 +955,8 @@ function saveEdit() {
   data[idx].amount = amount;
   data[idx].repeat = document.getElementById('editRepeat').value;
   data[idx].note = document.getElementById('editNote').value.trim();
+  const editDateVal = document.getElementById('editDate').value;
+  if (editDateVal) data[idx].date = new Date(editDateVal + 'T12:00:00').toISOString();
   saveData(data);
   closeModal();
   showToast('✓ Saved');

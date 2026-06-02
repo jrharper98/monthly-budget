@@ -537,22 +537,20 @@ canvas { width: 100% !important; }
     </div>
 
     <div class="card" style="margin-top:12px;">
-      <div class="card-title">⏰ Daily Fun Money Reminder</div>
-      <p style="font-size:13px; color:var(--text2); line-height:1.7; margin-bottom:14px;">Set up a daily 10:30 AM notification that opens this app. Takes 2 minutes — do it once and you're set!</p>
+      <div class="card-title">🔔 Daily Fun Money Reminder</div>
+      <p style="font-size:13px; color:var(--text2); line-height:1.7; margin-bottom:14px;">Set up a daily 10:00 AM lock screen notification using the built-in Reminders app. One time setup!</p>
       <div style="background:var(--bg2); border-radius:var(--radius-sm); padding:14px; font-size:13px; color:var(--text); line-height:1.8;">
         <div style="font-weight:600; margin-bottom:6px; color:var(--accent2);">Setup steps:</div>
-        <div>1. Open the <strong>Shortcuts</strong> app on your iPhone</div>
-        <div>2. Tap <strong>Automation</strong> (bottom tab)</div>
-        <div>3. Tap <strong>＋ New Automation</strong></div>
-        <div>4. Choose <strong>Time of Day</strong></div>
-        <div>5. Set time to <strong>10:30 AM</strong>, repeat <strong>Daily</strong></div>
-        <div>6. Tap <strong>Next</strong></div>
-        <div>7. Tap <strong>Add Action</strong> → search <strong>"Open URL"</strong></div>
-        <div>8. Paste your app URL (e.g. <em>https://jrharper98.github.io/monthly-budget/</em>)</div>
-        <div>9. Tap <strong>Next</strong> → turn off "Ask Before Running"</div>
-        <div>10. Tap <strong>Done</strong> ✓</div>
+        <div>1. Open the <strong>Reminders</strong> app on your iPhone</div>
+        <div>2. Tap <strong>＋ New Reminder</strong></div>
+        <div>3. Title it <em>"Check your fun money balance 💸"</em></div>
+        <div>4. Tap the <strong>ⓘ info icon</strong> next to the reminder</div>
+        <div>5. Toggle on <strong>Date</strong> → set to today</div>
+        <div>6. Toggle on <strong>Time</strong> → set to <strong>10:00 AM</strong></div>
+        <div>7. Tap <strong>Repeat</strong> → choose <strong>Daily</strong></div>
+        <div>8. Tap <strong>Done</strong> ✓</div>
       </div>
-      <p style="font-size:12px; color:var(--text3); margin-top:10px;">Every day at 10:30 AM you'll get a notification — tap it to open the app and check your Fun Money balance.</p>
+      <p style="font-size:12px; color:var(--text3); margin-top:10px;">Every day at 10:00 AM a notification will appear on your lock screen. Tap it to open Reminders, then switch to your budget app!</p>
     </div>
       <p style="font-size:13px; color:var(--text2); margin-bottom:14px; line-height:1.6;">Export your data as a backup file, and restore it anytime if data is lost.</p>
       <div style="display:flex; gap:10px;">
@@ -617,8 +615,8 @@ const CATEGORIES = [
   { name: 'Rent + Utilities', budget: 2020 },
   { name: 'Phone', budget: 109 },
   { name: 'PG&E', budget: 35 },
-  { name: 'Xfinity', budget: 100 },
-  { name: 'All Subscriptions', budget: 249 },
+  { name: 'Xfinity', budget: 100.30 },
+  { name: 'All Subscriptions', budget: 265 },
   { name: 'Credit Cards', budget: 614 },
   { name: 'Groceries', budget: 280 },
   { name: 'Transit', budget: 161 },
@@ -751,7 +749,12 @@ function loadRecurring() {
     const key = e.category + e.repeat;
     if (!seen.has(key) && !existing.includes(key)) {
       seen.add(key);
-      toLoad.push({ ...e, id: Date.now() + Math.random(), monthKey, createdMonth: monthKey, date: new Date().toISOString() });
+      // Use original recurring day, clamped to valid days in target month
+      const day = e.recurringDay || 1;
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const clampedDay = Math.min(day, daysInMonth);
+      const recurDate = new Date(currentYear, currentMonth, clampedDay).toISOString();
+      toLoad.push({ ...e, id: Date.now() + Math.random(), monthKey, date: recurDate, createdMonth: monthKey });
     }
   }
 
@@ -760,12 +763,17 @@ function loadRecurring() {
     return;
   }
 
+  // Confirmation step
+  const names = toLoad.map(e => `${e.category} — $${parseFloat(e.amount).toFixed(2)}`).join('\n');
+  if (!confirm(`Load ${toLoad.length} recurring expense${toLoad.length > 1 ? 's' : ''}?\n\n${names}`)) return;
+
   data.push(...toLoad);
   saveData(data);
   markRecurringLoaded(currentYear, currentMonth);
   document.getElementById('recurringBanner').style.display = 'none';
   showToast(`✓ Loaded ${toLoad.length} recurring expense${toLoad.length > 1 ? 's' : ''}`);
   renderSpending();
+  renderTotals();
 }
 
 // Render spending tab
@@ -817,12 +825,14 @@ function renderSpending() {
   sorted.forEach(e => {
     const item = document.createElement('div');
     item.className = 'expense-item';
-    const repeatLabel = e.repeat !== 'none' ? ` · ${e.repeat === 'monthly' ? '🔁 monthly' : '📅 annual'}` : '';
+    const repeatLabel = e.repeat && e.repeat !== 'none' ? (e.repeat === 'monthly' ? '🔁 monthly' : '📅 annual') : '';
+    const dateLabel = e.date ? new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+    const metaParts = [dateLabel, e.note, repeatLabel].filter(Boolean).join(' · ');
     item.innerHTML = `
       <div class="expense-cat-dot"></div>
       <div class="expense-info">
         <div class="expense-cat">${e.category}</div>
-        <div class="expense-meta">${e.note ? e.note + ' · ' : ''}${repeatLabel ? repeatLabel.replace(' · ','') : ''}</div>
+        <div class="expense-meta">${metaParts}</div>
       </div>
       <div class="expense-amount">${formatCurrency(e.amount)}</div>
       <div class="expense-actions">
@@ -867,6 +877,7 @@ function addExpense() {
   const monthKey = monthVal;
 
   const data = loadData();
+  const today = new Date();
   const expense = {
     id: Date.now().toString(),
     monthKey,
@@ -874,11 +885,12 @@ function addExpense() {
     amount,
     repeat,
     note,
-    date: new Date().toISOString(),
-    createdMonth: monthVal
+    date: new Date(`${monthVal}-${String(today.getDate()).padStart(2,'0')}`).toISOString(),
+    createdMonth: monthVal,
+    recurringDay: today.getDate()
   };
 
-  // If annual, store original month
+  // If annual, store original month index
   if (repeat === 'annual') expense.annualMonth = parseInt(monthVal.split('-')[1]) - 1;
 
   data.push(expense);
@@ -900,8 +912,9 @@ function addExpense() {
 
 // Delete
 function deleteExpense(id) {
+  if (!confirm('Delete this expense?')) return;
   let data = loadData();
-  data = data.filter(e => e.id !== id);
+  data = data.filter(e => String(e.id) !== String(id));
   saveData(data);
   showToast('Deleted');
   renderSpending();
@@ -911,9 +924,9 @@ function deleteExpense(id) {
 // Edit
 function openEdit(id) {
   const data = loadData();
-  const expense = data.find(e => e.id === id);
+  const expense = data.find(e => String(e.id) === String(id));
   if (!expense) return;
-  editingId = id;
+  editingId = String(id);
   populateCategoryDropdowns();
   document.getElementById('editCategory').value = expense.category;
   document.getElementById('editAmount').value = expense.amount;
@@ -924,7 +937,7 @@ function openEdit(id) {
 
 function saveEdit() {
   const data = loadData();
-  const idx = data.findIndex(e => e.id === editingId);
+  const idx = data.findIndex(e => String(e.id) === String(editingId));
   if (idx === -1) return;
   const amount = parseFloat(document.getElementById('editAmount').value);
   if (isNaN(amount) || amount <= 0) { showToast('Enter a valid amount'); return; }
@@ -1064,7 +1077,11 @@ function autoPopulateAnnual() {
     const key = e.category;
     if (!seen.has(key) && !existingCats.includes(key)) {
       seen.add(key);
-      toAdd.push({ ...e, id: Date.now() + Math.random(), monthKey, date: new Date().toISOString(), createdMonth: monthKey });
+      const day = e.recurringDay || 1;
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const clampedDay = Math.min(day, daysInMonth);
+      const recurDate = new Date(currentYear, currentMonth, clampedDay).toISOString();
+      toAdd.push({ ...e, id: Date.now() + Math.random(), monthKey, date: recurDate, createdMonth: monthKey });
     }
   });
 

@@ -760,7 +760,7 @@ function loadRecurring() {
       const day = e.recurringDay || 1;
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
       const clampedDay = Math.min(day, daysInMonth);
-      const recurDate = new Date(currentYear, currentMonth, clampedDay).toISOString();
+      const recurDate = new Date(Date.UTC(currentYear, currentMonth, clampedDay, 12, 0, 0)).toISOString();
       toLoad.push({ ...e, id: Date.now() + Math.random(), monthKey, date: recurDate, createdMonth: monthKey });
     }
   }
@@ -833,7 +833,7 @@ function renderSpending() {
     const item = document.createElement('div');
     item.className = 'expense-item';
     const repeatLabel = e.repeat && e.repeat !== 'none' ? (e.repeat === 'monthly' ? '🔁 monthly' : '📅 annual') : '';
-    const dateLabel = e.date ? new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+    const dateLabel = e.date ? new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : '';
     const metaParts = [dateLabel, e.note, repeatLabel].filter(Boolean).join(' · ');
     item.innerHTML = `
       <div class="expense-cat-dot"></div>
@@ -885,6 +885,9 @@ function addExpense() {
 
   const data = loadData();
   const today = new Date();
+  const [yrNum, moNum] = monthVal.split('-').map(Number);
+  const daysInSelMonth = new Date(yrNum, moNum, 0).getDate();
+  const dayNum = Math.min(today.getDate(), daysInSelMonth);
   const expense = {
     id: Date.now().toString(),
     monthKey,
@@ -892,9 +895,9 @@ function addExpense() {
     amount,
     repeat,
     note,
-    date: new Date(`${monthVal}-${String(today.getDate()).padStart(2,'0')}`).toISOString(),
+    date: new Date(Date.UTC(yrNum, moNum - 1, dayNum, 12, 0, 0)).toISOString(),
     createdMonth: monthVal,
-    recurringDay: today.getDate()
+    recurringDay: dayNum
   };
 
   // If annual, store original month index
@@ -956,7 +959,7 @@ function saveEdit() {
   data[idx].repeat = document.getElementById('editRepeat').value;
   data[idx].note = document.getElementById('editNote').value.trim();
   const editDateVal = document.getElementById('editDate').value;
-  if (editDateVal) data[idx].date = new Date(editDateVal + 'T12:00:00').toISOString();
+  if (editDateVal) data[idx].date = new Date(editDateVal + 'T12:00:00Z').toISOString();
   saveData(data);
   closeModal();
   showToast('✓ Saved');
@@ -1092,7 +1095,7 @@ function autoPopulateAnnual() {
       const day = e.recurringDay || 1;
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
       const clampedDay = Math.min(day, daysInMonth);
-      const recurDate = new Date(currentYear, currentMonth, clampedDay).toISOString();
+      const recurDate = new Date(Date.UTC(currentYear, currentMonth, clampedDay, 12, 0, 0)).toISOString();
       toAdd.push({ ...e, id: Date.now() + Math.random(), monthKey, date: recurDate, createdMonth: monthKey });
     }
   });

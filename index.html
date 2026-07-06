@@ -502,8 +502,8 @@ canvas { width: 100% !important; }
 
 
       <div class="form-group">
-        <label class="form-label">Month & Year</label>
-        <input type="month" class="form-input" id="expMonth">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="expDate">
       </div>
 
       <div class="form-group">
@@ -675,10 +675,6 @@ function showToast(msg) {
 // Month navigation
 function updateMonthDisplay() {
   document.getElementById('monthDisplay').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
-  const input = document.getElementById('expMonth');
-  if (!input.dataset.userSet) {
-    input.value = getKey(currentYear, currentMonth);
-  }
   checkRecurringBanner();
   renderSpending();
   renderTotals();
@@ -869,25 +865,21 @@ function populateCategoryDropdowns() {
 }
 
 function addExpense() {
-  const monthVal = document.getElementById('expMonth').value;
+  const dateVal = document.getElementById('expDate').value;
   const category = document.getElementById('expCategory').value;
   const amount = parseFloat(document.getElementById('expAmount').value);
   const repeat = document.getElementById('expRepeat').value;
   const note = document.getElementById('expNote').value.trim();
 
-  if (!monthVal || !category || isNaN(amount) || amount <= 0) {
+  if (!dateVal || !category || isNaN(amount) || amount <= 0) {
     showToast('Please fill all required fields');
     return;
   }
 
-  const [yr, mo] = monthVal.split('-').map(Number);
-  const monthKey = monthVal;
+  const [yrNum, moNum, dayNum] = dateVal.split('-').map(Number);
+  const monthKey = `${yrNum}-${String(moNum).padStart(2,'0')}`;
 
   const data = loadData();
-  const today = new Date();
-  const [yrNum, moNum] = monthVal.split('-').map(Number);
-  const daysInSelMonth = new Date(yrNum, moNum, 0).getDate();
-  const dayNum = Math.min(today.getDate(), daysInSelMonth);
   const expense = {
     id: Date.now().toString(),
     monthKey,
@@ -896,26 +888,23 @@ function addExpense() {
     repeat,
     note,
     date: new Date(Date.UTC(yrNum, moNum - 1, dayNum, 12, 0, 0)).toISOString(),
-    createdMonth: monthVal,
+    createdMonth: monthKey,
     recurringDay: dayNum
   };
 
   // If annual, store original month index
-  if (repeat === 'annual') expense.annualMonth = parseInt(monthVal.split('-')[1]) - 1;
+  if (repeat === 'annual') expense.annualMonth = moNum - 1;
 
   data.push(expense);
   saveData(data);
 
-  // Reset form
+  // Reset form (keep the date so multiple expenses can be logged for the same day)
   document.getElementById('expCategory').value = '';
   document.getElementById('expAmount').value = '';
   document.getElementById('expRepeat').value = 'none';
   document.getElementById('expNote').value = '';
 
   showToast('✓ Expense added');
-
-  // If added to current viewed month, update display
-  if (yr - 1 === currentMonth && false) {} // keep month input as-is
   renderSpending();
   renderTotals();
 }
@@ -1167,11 +1156,10 @@ function init() {
 
   populateCategoryDropdowns();
 
-  // Set default month input to today
-  document.getElementById('expMonth').value = getKey(currentYear, currentMonth);
-  document.getElementById('expMonth').addEventListener('change', function() {
-    this.dataset.userSet = '1';
-  });
+  // Default date input to today (local date)
+  const nowD = new Date();
+  const todayStr = `${nowD.getFullYear()}-${String(nowD.getMonth()+1).padStart(2,'0')}-${String(nowD.getDate()).padStart(2,'0')}`;
+  document.getElementById('expDate').value = todayStr;
 
   updateMonthDisplay();
   autoPopulateAnnual();
